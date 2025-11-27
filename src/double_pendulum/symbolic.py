@@ -61,11 +61,31 @@ def pendulum_cq(l1: int) -> Callable[np.ndarray, np.ndarray]:
     return jc, sp.lambdify((x, y, theta), jc, "numpy")
 
 
+# %%
+def pendulum_qc(cq):
+    """Computes Qc for holonomic constraints (Shabana p.404).
+
+    Args:
+    cq: the constraint jacobian matrix.
+
+    Returns:
+    qc : the generalized reaction forces.
+    """
+    x, y, theta, dxdt, dydt, dthetadt = sp.symbols("x y theta dxdt dydt dthetadt")
+
+    qdot = sp.Matrix([dxdt, dydt, dthetadt])
+
+    qc1 = sp.simplify(cq @ qdot)
+    qc2 = qc1.jacobian([x, y, theta])
+    qc = sp.simplify(qc2 @ qdot)
+    return qc, sp.lambdify((x, y, theta, dxdt, dydt, dthetadt), qc, "numpy")
 
 
 # %%
 if __name__ == "__main__":
-    cq2 = pendulum_cq()
-    print(f"cq2 = {cq2}")
+    l1 = 1.0
+    cq2 = pendulum_cq(l1)[0]
+    qc = pendulum_qc(cq2)
+    print(qc[0])
 
 # %%
