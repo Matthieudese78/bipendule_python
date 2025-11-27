@@ -3,13 +3,18 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from double_pendulum.symbolic import pendulum_cq
+
+# %%
 
 g = 9.81
 
 m1 = 1.0
 
-x0 = 0.0
-y0 = 0.0
+l1 = 1.0
+theta = 10.0 * np.pi / 180.0
+x0 = np.cos(theta)
+y0 = np.sin(theta)
 vx0 = 1.0
 vy0 = 20.0
 
@@ -53,5 +58,6 @@ plt.scatter(t, K, s=4, color="g")
 plt.scatter(t, H, s=4, color="b")
 plt.scatter(t, L, s=4, color="orange")
 plt.show()
+
 
 # %%
