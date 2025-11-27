@@ -55,7 +55,12 @@ def pendulum_cq(l1: int) -> Callable[np.ndarray, np.ndarray]:
     # alternative, shorter version :
     c = sp.Matrix([cx, cy])
     jc = c.jacobian([x, y, theta])
-    return sp.lambdify((x, y, theta), jc, "numpy")
+    print(f"jc = {jc}")
+    print(f"jc.T = {jc.T}")
+    # return sp.lambdify((x, y, theta), jc, "numpy")
+    return jc, sp.lambdify((x, y, theta), jc, "numpy")
+
+
 
 
 # %%
