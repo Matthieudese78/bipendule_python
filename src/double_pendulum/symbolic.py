@@ -8,17 +8,17 @@ import sympy as sp
 
 
 # %% Lagrange multipliers :
-def pendulum_cq() -> Callable[np.ndarray, np.ndarray]:
+def pendulum_cq(l1: int) -> Callable[np.ndarray, np.ndarray]:
     """Computation of the constraint jacobian.
 
     Args:
-    None
+    l1: pendulum length
 
     Returns:
     Callable
     """
     # Holonomic Constraints: sqrt(x^2 + y^2) = l
-    x, y, theta, L = sp.symbols("x y theta L")
+    x, y, theta = sp.symbols("x y theta")
     sp.init_printing(use_unicode=True)
     f = sp.simplify(sp.sqrt(x**2 + y**2))
     print(f)
@@ -31,8 +31,8 @@ def pendulum_cq() -> Callable[np.ndarray, np.ndarray]:
     # Theta is the independent variable
     # x , y are the dependent variables
     # Constraints (should be equal to zero):
-    cx = sp.simplify(x - L * sp.cos(theta))
-    cy = sp.simplify(y - L * sp.sin(theta))
+    cx = sp.simplify(x - l1 * sp.cos(theta))
+    cy = sp.simplify(y - l1 * sp.sin(theta))
     # Ordinating the variables : x, y, theta
     # Gradient of the constraint (d Ci/ d Xj)
     # C_q = [[ dCx/dx , dCx/dy, dCx/dtheta],
