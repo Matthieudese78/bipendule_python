@@ -1,8 +1,9 @@
+from typing import void
+
 # %%
-import double_pendulum.start
 
 
-def main():
+def main() -> void:
     print("Hello from myproj!")
 
 
