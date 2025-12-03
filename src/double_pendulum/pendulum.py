@@ -38,10 +38,13 @@ def right_hand_side(t, y) -> np.ndarray:
 
 y0 = (theta, dthetadt0)
 
-dt = 0.1
+h = 0.1
 
 # %%
-t = np.linspace(0, 10, 100)
+num_steps = 10000
+t = np.linspace(0.0, 10.0, num_steps)
+h = t[0] - t[1]
+
 sol = sp.integrate.solve_ivp(right_hand_side, [0.0, 10.0], y0, t_eval=t)
 
 plt.scatter(sol.t, sol.y[0])
@@ -57,36 +60,60 @@ plt.show()
 plt.close("all")
 
 # %% Euler forward integration
-dt = 0.001
-num_steps = 1000
-save_discr = 4
-isave = 0
+
 # Initialization :
 y = np.array([theta, dthetadt0])
 gamma = -m1 * g * l1 * np.cos(theta)
 dydt = np.array([dthetadt0, gamma / J])
 
-saved_step = np.zeros((int(np.floor(num_steps / save_discr)), y.shape[0]))
+result = np.zeros((len(t), y.shape[0]))
 
-for step in range(num_steps):
-    y += dydt * dt
+for i, step in enumerate(t):
+    # # Euler Forward :
+    # y += dydt * h
 
+    # gamma = -m1 * g * l1 * np.cos(y[0])
+
+    # dydt[0] = y[1]
+    # dydt[1] = gamma / J
+
+    # Euler Backward :
+    # initialization newton raphson : one step of euler forward
     gamma = -m1 * g * l1 * np.cos(y[0])
+    th = y[0] + h * y[1]
+    w = y[1] + h * gamma / J
 
-    dydt[0] = y[1]
-    dydt[1] = gamma / J
+    res = np.array([th - y[0] - h * w, w - y[1] + h * (g / l1) * np.cos(th)])
+    crit0 = la.norm(res)
+    crit = crit0
+    niter = 0
+    print(f"crit initial = {crit}")
+    while (crit > crit0 / 10.0) and (niter < 100):
+        jac = np.array([[1.0, -h], [-(h * g / l1) * np.sin(th), 1.0]])
+        delta_res = -np.linalg.solve(jac, res)
+        th += delta_res[0]
+        w += delta_res[1]
+        res += delta_res
+        crit = la.norm(res)
+        niter += 1
+
+    print(f"step {i}, nb iterations = {niter}")
+    print(f"          crit final = {crit}")
+
+    y[0] = th
+    y[1] = w
 
     # save step:
-    print(f"y = {y}")
-    if step % save_discr == 0:
-        saved_step[isave] = y
-        isave += 1
+    # print(f"y = {y}")
+    # if step % save_discr == 0:
+    result[i] = y
+    # isave += 1
+# %%
+theta = result[:, 0]
+dthetadt = result[:, 1]
+x = l1 * np.cos(result[:, 0])
+y = l1 * np.sin(result[:, 0])
 
-t = np.arange(len(saved_step)) * save_discr * dt
-theta = saved_step[:, 0]
-dthetadt = saved_step[:, 1]
-x = l1 * np.cos(saved_step[:, 0])
-y = l1 * np.sin(saved_step[:, 0])
 # %%
 plt.scatter(t, theta, s=4)
 plt.show()
@@ -100,30 +127,17 @@ plt.show()
 # %%
 plt.scatter(x, y, s=4)
 plt.show()
-# %%
-# %%
-plt.scatter(t, saved_step[:, 1], s=4)
-plt.show()
-# %%
-plt.scatter(t, saved_step[:, 0] * 180.0 / np.pi, s=4)
-plt.show()
-
-# %%
-saved_step = np.array(saved_step)
-plt.scatter(t, saved_step[:, 1], s=4)
-plt.show()
-
 
 # %% plot the lagrangian
-T = 0.5 * J * saved_step[:, 1] ** 2
+T = 0.5 * J * result[:, 1] ** 2
 # T = 0.5 * m1 * (l1 * dthetadt) ** 2
-K = m1 * g * np.sin(saved_step[:, 0])
+K = m1 * g * np.sin(result[:, 0])
 H = T + K
 L = T - K
-plt.scatter(t, T, s=4, color="r")
-plt.scatter(t, K, s=4, color="g")
+# plt.scatter(t, T, s=4, color="r")
+# plt.scatter(t, K, s=4, color="g")
 plt.scatter(t, H, s=4, color="b")
-plt.scatter(t, L, s=4, color="orange")
+# plt.scatter(t, L, s=4, color="orange")
 plt.show()
 
 
