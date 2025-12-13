@@ -7,6 +7,7 @@ import scipy as sp
 from scipy.integrate import odeint
 
 from double_pendulum.postreatment import post_treatment_pendulum
+from double_pendulum.solvers import euler_backward_newton, euler_forward
 
 GRAVITY = 9.81
 # %%
@@ -103,13 +104,16 @@ if choice == "euler_forward":
         y += right_hand_side(y) * h
         result[i] = y
 
+post_treatment_pendulum(result, l1, m1, t)
 
-def pred(y):
-    g = 9.81
-    ypred = np.array([y[0] + h * y[1], y[1] - h * m1 * g * l1 * np.cos(y[0])])
-    return ypred
+# %% test en fonction :
+
+result = euler_forward(t, y0, right_hand_side)
+
+post_treatment_pendulum(result, l1, m1, t)
 
 
+# %%
 def residu(y, ypred):
     return ypred - y - h * right_hand_side(ypred)
 
@@ -124,7 +128,6 @@ ypred = pred(y0)
 res = test_expr_residu(y0, ypred)
 
 
-# %%
 def residu_jacobian(ypred):
     return np.array(
         [
@@ -134,31 +137,9 @@ def residu_jacobian(ypred):
     )
 
 
-if choice == "euler_backward":
-    y = y0.copy()
-    for i, step in enumerate(t):
-        # Euler Backward :
-        # initialization newton raphson : one step of euler forward
-        ypred = pred(y)
-        res = residu(y, ypred)
-        crit = la.norm(res)
-        niter = 0
-        print(f"crit initial = {crit}")
-        while (crit > 1.0e-15) and (niter < 500):
-            jac = residu_jacobian(ypred)
-            delta_res = -np.linalg.solve(jac, res)
-            ypred += delta_res
-            res = residu(y, ypred)
-            crit = la.norm(res)
-            niter += 1
-
-        print(f"step {i}, nb iterations = {niter}")
-        print(f"          crit final = {crit}")
-
-        y = ypred
-        result[i] = y
-
-# %% postreatment
+# %%
+result = euler_backward_newton(t, y0, right_hand_side, residu, residu_jacobian)
+# %%
 post_treatment_pendulum(
     result,
     l1,
@@ -185,28 +166,6 @@ def f_pendulum(y: float | np.ndarray, **fargs: dict) -> float | np.ndarray:
     g = fargs["g"]
     l1 = fargs["l"]
     return np.array([y[1], -m * g * l1 * np.cos(y[0])])
-
-
-def euler_forward(t: np.ndarray, y0: float | np.ndarray, f: callable, **fargs: dict) -> np.ndarray:
-    """Integrates an ivp solution.
-
-    Args:
-        t: time vector
-        y0 : initial values
-        f : right hand side
-        fargs : f arguments
-
-    Returns:
-        time integrated serie.
-
-    """
-    h = t[1] - t[0]
-    y = y0.copy()
-    result = np.zeros((len(t), y0.shape[0]))
-    for i, time in enumerate(t):
-        y += h * f(y, **fargs)
-        result[i] = y
-    return result
 
 
 def res_pendulum_euler_backward(
