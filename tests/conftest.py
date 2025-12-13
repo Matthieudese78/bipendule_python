@@ -1,10 +1,9 @@
+import pytest
 import numpy as np
-from double_pendulum.pendulum import euler_forward, f_pendulum
-
-# %%
 
 
-def main() -> np.ndarray:
+@pytest.fixture
+def pendulum_setup():
     g = 9.81
 
     m1 = 1.0
@@ -17,15 +16,8 @@ def main() -> np.ndarray:
 
     y0 = np.array([theta, dthetadt0])
 
+    h = 0.1
     num_steps = 10000
     t = np.linspace(0.0, 10.0, num_steps)
 
     fargs = {"m": m1, "l": l1, "g": g}
-
-    return euler_forward(t, y0, f_pendulum, **fargs)
-
-
-if __name__ == "__main__":
-    main()
-
-# %%

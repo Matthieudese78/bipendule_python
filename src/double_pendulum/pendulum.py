@@ -1,144 +1,324 @@
 # %%
 """Starting point for the double pendulum simulation."""
 
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as la
-
-from double_pendulum.symbolic import pendulum_cq, pendulum_qc
-
 import scipy as sp
+from scipy.integrate import odeint
 
+from double_pendulum.postreatment import post_treatment_pendulum
+
+GRAVITY = 9.81
 # %%
 
-g = 9.81
+g = GRAVITY
 
-m1 = 1.0
-
+m1 = 1.0e-2
 l1 = 1.0
 
 J = m1 * l1**2
 
-theta = -45.0 * np.pi / 180.0
+theta0 = 0 * np.pi / 180.0
 
-x0 = l1 * np.cos(theta)
-y0 = l1 * np.sin(theta)
+x0 = l1 * np.cos(theta0)
+y0 = l1 * np.sin(theta0)
 
 dthetadt0 = 0.0
 
-vx0 = -dthetadt0 * l1 * np.sin(theta)
-vy0 = dthetadt0 * l1 * np.cos(theta)
+vx0 = -dthetadt0 * l1 * np.sin(theta0)
+vy0 = dthetadt0 * l1 * np.cos(theta0)
+
+y0 = np.array([theta0, dthetadt0])
 
 
-def right_hand_side(t, y) -> np.ndarray:
+# %% right hand side functions:
+# solve_ivp * rk45 :
+def right_hand_side_solve_ivp(t, y) -> np.ndarray:
     theta, dthetadt = y
-    gamma = -m1 * l1 * np.cos(theta) / J
+    gamma = -m1 * g * l1 * np.cos(theta) / J
     return np.array([dthetadt, gamma])
 
 
-y0 = (theta, dthetadt0)
+def right_hand_side_odeint(y, t) -> np.ndarray:
+    gamma = -m1 * l1 * g * np.cos(y[0]) / J
+    return np.array([y[1], gamma])
 
-h = 0.1
+
+# for custom euler forward and backward :
+def right_hand_side(y) -> np.ndarray:
+    gamma = -m1 * l1 * g * np.cos(y[0]) / J
+    return np.array([y[1], gamma])
+
 
 # %%
 num_steps = 10000
 t = np.linspace(0.0, 10.0, num_steps)
-h = t[0] - t[1]
 
-sol = sp.integrate.solve_ivp(right_hand_side, [0.0, 10.0], y0, t_eval=t)
+y0 = np.array([theta0, dthetadt0])
 
-plt.scatter(sol.t, sol.y[0])
-plt.scatter(sol.t, sol.y[1])
-plt.show()
-plt.scatter(sol.t, l1 * np.cos(sol.y[0]))
-plt.scatter(sol.t, l1 * np.sin(sol.y[0]))
-plt.show()
-plt.close("all")
+bool_odeint = False
+bool_solve_ivp = True
+bool_rk45 = False
 
-plt.scatter(l1 * np.cos(sol.y[0]), l1 * np.cos(sol.y[1]))
-plt.show()
-plt.close("all")
+if bool_solve_ivp:
+    y0 = (theta0, dthetadt0)
+    result = sp.integrate.solve_ivp(right_hand_side_solve_ivp, [0.0, 10.0], y0, t_eval=t)
+    sol = np.array([result.y[0], result.y[1]]).T
 
-# %% Euler forward integration
+if bool_odeint:
+    sol = odeint(right_hand_side_odeint, y0, t)
 
-# Initialization :
-y = np.array([theta, dthetadt0])
-gamma = -m1 * g * l1 * np.cos(theta)
-dydt = np.array([dthetadt0, gamma / J])
+if bool_rk45:
+    rk = sp.integrate.RK45(right_hand_side_solve_ivp, 0.0, y0, 10.0, max_step=1.0e-3)
 
-result = np.zeros((len(t), y.shape[0]))
+    times = [rk.t]
+    states = [rk.y.copy()]
 
-for i, step in enumerate(t):
-    # # Euler Forward :
-    # y += dydt * h
+    while rk.status == "running":
+        rk.step()
+        times.append(rk.t)
+        states.append(rk.y.copy())
 
-    # gamma = -m1 * g * l1 * np.cos(y[0])
+    t = np.asarray(times)
+    sol = np.asarray(states)
 
-    # dydt[0] = y[1]
-    # dydt[1] = gamma / J
+print(np.shape(sol))
+# %%
+post_treatment_pendulum(sol, l1, m1, t)
 
-    # Euler Backward :
-    # initialization newton raphson : one step of euler forward
-    gamma = -m1 * g * l1 * np.cos(y[0])
-    th = y[0] + h * y[1]
-    w = y[1] + h * gamma / J
+# %% PROTOTYPES :
+t = np.linspace(0.0, 10.0, num_steps)
+y0 = np.array([theta0, dthetadt0])
+# Solver :
+choice = "euler_forward"
+# choice = "euler_backward"
 
-    res = np.array([th - y[0] - h * w, w - y[1] + h * (g / l1) * np.cos(th)])
-    crit0 = la.norm(res)
-    crit = crit0
-    niter = 0
-    print(f"crit initial = {crit}")
-    while (crit > crit0 / 10.0) and (niter < 100):
-        jac = np.array([[1.0, -h], [-(h * g / l1) * np.sin(th), 1.0]])
-        delta_res = -np.linalg.solve(jac, res)
-        th += delta_res[0]
-        w += delta_res[1]
-        res += delta_res
+result = np.zeros((len(t), y0.shape[0]))
+
+h = t[1] - t[0]
+# # Euler Forward :
+if choice == "euler_forward":
+    y = y0.copy()
+    for i, step in enumerate(t):
+        y += right_hand_side(y) * h
+        result[i] = y
+
+
+def pred(y):
+    g = 9.81
+    ypred = np.array([y[0] + h * y[1], y[1] - h * m1 * g * l1 * np.cos(y[0])])
+    return ypred
+
+
+def residu(y, ypred):
+    return ypred - y - h * right_hand_side(ypred)
+
+
+def test_expr_residu(y, ypred):
+    analytic = np.array([ypred[0] - y[0] - h * ypred[1], ypred[1] - y[1] + (h * g / l1) * np.cos(ypred[0])])
+    res = ypred - y - h * right_hand_side(ypred)
+    assert np.array([analytic[i] == res[i] for i in range(2)]).all()
+
+
+ypred = pred(y0)
+res = test_expr_residu(y0, ypred)
+
+
+# %%
+def residu_jacobian(ypred):
+    return np.array(
+        [
+            [1.0, -h],
+            [-(h * g / l1) * np.sin(ypred[0]), 1.0],
+        ]
+    )
+
+
+if choice == "euler_backward":
+    y = y0.copy()
+    for i, step in enumerate(t):
+        # Euler Backward :
+        # initialization newton raphson : one step of euler forward
+        ypred = pred(y)
+        res = residu(y, ypred)
         crit = la.norm(res)
-        niter += 1
+        niter = 0
+        print(f"crit initial = {crit}")
+        while (crit > 1.0e-15) and (niter < 500):
+            jac = residu_jacobian(ypred)
+            delta_res = -np.linalg.solve(jac, res)
+            ypred += delta_res
+            res = residu(y, ypred)
+            crit = la.norm(res)
+            niter += 1
 
-    print(f"step {i}, nb iterations = {niter}")
-    print(f"          crit final = {crit}")
+        print(f"step {i}, nb iterations = {niter}")
+        print(f"          crit final = {crit}")
 
-    y[0] = th
-    y[1] = w
+        y = ypred
+        result[i] = y
 
-    # save step:
-    # print(f"y = {y}")
-    # if step % save_discr == 0:
-    result[i] = y
-    # isave += 1
+# %% postreatment
+post_treatment_pendulum(
+    result,
+    l1,
+    m1,
+    t,
+)
+
+
 # %%
-theta = result[:, 0]
-dthetadt = result[:, 1]
-x = l1 * np.cos(result[:, 0])
-y = l1 * np.sin(result[:, 0])
+def f_pendulum(y: float | np.ndarray, **fargs: dict) -> float | np.ndarray:
+    """Right hand side of the pendulum.
 
-# %%
-plt.scatter(t, theta, s=4)
-plt.show()
-# %%
-plt.scatter(t, dthetadt, s=4)
-plt.show()
-# %%
-plt.scatter(t, x, s=4)
-plt.scatter(t, y, s=4)
-plt.show()
-# %%
-plt.scatter(x, y, s=4)
-plt.show()
+    Args:
+        y : coordinates values
+        m : mass
+        l1 : length
+        fargs : pendulum values
 
-# %% plot the lagrangian
-T = 0.5 * J * result[:, 1] ** 2
-# T = 0.5 * m1 * (l1 * dthetadt) ** 2
-K = m1 * g * np.sin(result[:, 0])
-H = T + K
-L = T - K
-# plt.scatter(t, T, s=4, color="r")
-# plt.scatter(t, K, s=4, color="g")
-plt.scatter(t, H, s=4, color="b")
-# plt.scatter(t, L, s=4, color="orange")
-plt.show()
+    Returns:
+        right hand side
 
+    """
+    m = fargs["m"]
+    g = fargs["g"]
+    l1 = fargs["l"]
+    return np.array([y[1], -m * g * l1 * np.cos(y[0])])
+
+
+def euler_forward(t: np.ndarray, y0: float | np.ndarray, f: callable, **fargs: dict) -> np.ndarray:
+    """Integrates an ivp solution.
+
+    Args:
+        t: time vector
+        y0 : initial values
+        f : right hand side
+        fargs : f arguments
+
+    Returns:
+        time integrated serie.
+
+    """
+    h = t[1] - t[0]
+    y = y0.copy()
+    result = np.zeros((len(t), y0.shape[0]))
+    for i, time in enumerate(t):
+        y += h * f(y, **fargs)
+        result[i] = y
+    return result
+
+
+def res_pendulum_euler_backward(
+    h: float, ypred: float | np.ndarray, y: float | np.ndarray, **fargs: dict
+) -> float | np.ndarray:
+    """Residu for the pendulum with euler backward.
+
+    Args:
+        h : time step
+        y : coordinates values
+        ypred : firs guess for y
+        m : mass
+        l1 : length
+        fargs : arguments
+
+    Returns:
+        residu
+
+    """
+    g = fargs["g"]
+    l1 = fargs["l"]
+    th = ypred[0]
+    w = ypred[1]
+    return np.array([th - y[0] - h * w, w - y[1] + h * (g / l1) * np.cos(th)])
+
+
+def jac_pendulum_euler_backward(h: float, ypred: float | np.ndarray, **fargs: dict) -> float | np.ndarray:
+    """Residu for the pendulum with euler backward.
+
+    Args:
+        h : time step
+        y : coordinates values
+        ypred : firs guess for y
+        m : mass
+        l1 : length
+        fargs : arguments
+
+    Returns:
+        residu
+
+    """
+    g = fargs["g"]
+    l1 = fargs["l"]
+    th = ypred[0]
+    return np.array([[1.0, -h], [-(h * g / l1) * np.sin(th), 1.0]])
+
+
+def euler_backward(
+    t: np.ndarray, y0: float | np.ndarray, f: callable, res: callable, jac: callable, max_iter: int = 200, **fargs: dict
+) -> np.ndarray:
+    """Integrates an ivp solution.
+
+    Args:
+        t: time vector
+        y0 : initial values
+        f : right hand side
+        res : residu function
+        jac : residu function
+        fargs : f arguments
+
+    Returns:
+        time integrated serie.
+
+    """
+
+    h = t[1] - t[0]
+
+    y = y0.copy()
+
+    result = np.zeros((len(t), y0.shape[0]))
+    for i, time in enumerate(t):
+        f0 = f(y, **fargs)
+        ypred = np.array([y[0] + h * f0[0], y[1] + h * f0[1]])
+
+        residu = res(h, ypred, y, **fargs)
+
+        crit0 = la.norm(residu)
+        crit = crit0
+        niter = 0
+        print(f"crit initial = {crit}")
+        while (crit > 1.0e-12) and (niter < max_iter):
+            jacobian = jac(h, ypred, **fargs)
+            delta_res = -np.linalg.solve(jacobian, residu)
+            ypred += delta_res
+            residu = res(h, ypred, y, **fargs)
+            crit = la.norm(residu)
+            niter += 1
+
+        print(f"step {i}, nb iterations = {niter}")
+        print(f"          crit final = {crit}")
+
+        y = ypred
+
+        result[i] = y
+
+    return result
+
+
+# %% scipy example :
+y0 = np.array([theta0, dthetadt0])
+
+num_steps = 10000
+t = np.linspace(0.0, 10.0, num_steps)
+
+fargs = {"m": m1, "l": l1, "g": GRAVITY}
+
+solver = "euler_forward"
+if solver == "euler_forward":
+    result = euler_forward(t, y0, f_pendulum, **fargs)
+if solver == "euler_backward":
+    result = euler_backward(t, y0, f_pendulum, res_pendulum_euler_backward, jac_pendulum_euler_backward, **fargs)
+
+post_treatment_pendulum(result, l1, m1, t)
 
 # %%
