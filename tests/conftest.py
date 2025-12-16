@@ -1,23 +1,53 @@
-import pytest
 import numpy as np
+import pytest
+
+from double_pendulum.solvers import (
+    euler_backward_iterative,
+    euler_forward,
+)
+from double_pendulum.utils_pendulum import (
+    residu_jacobian_pendulum,
+    residu_pendulum,
+    right_hand_side_pendulum,
+)
 
 
 @pytest.fixture
 def pendulum_setup():
-    g = 9.81
-
     m1 = 1.0
-
     l1 = 1.0
+    inertia = m1 * l1**2
 
-    theta = -45.0 * np.pi / 180.0
+    yield {"mass": m1, "length": l1, "inertia tensor": inertia}
 
+
+@pytest.fixture
+def result_pendulum_euler_forward():
+    m1 = 1.0
+    l1 = 1.0
+    inertia = m1 * l1**2
+    theta0 = -45.0 * np.pi / 180.0
     dthetadt0 = 0.0
-
-    y0 = np.array([theta, dthetadt0])
-
-    h = 0.1
+    y0 = np.array([theta0, dthetadt0])
     num_steps = 10000
     t = np.linspace(0.0, 10.0, num_steps)
 
-    fargs = {"m": m1, "l": l1, "g": g}
+    fargs = {"mass": m1, "length": l1, "inertia tensor": inertia}
+
+    yield euler_forward(t, y0, right_hand_side_pendulum, **fargs)
+
+
+@pytest.fixture
+def result_pendulum_euler_backward_iterative():
+    m1 = 1.0
+    l1 = 1.0
+    inertia = m1 * l1**2
+    theta0 = -45.0 * np.pi / 180.0
+    dthetadt0 = 0.0
+    y0 = np.array([theta0, dthetadt0])
+    num_steps = 10000
+    t = np.linspace(0.0, 10.0, num_steps)
+
+    fargs = {"mass": m1, "length": l1, "inertia tensor": inertia}
+
+    yield euler_backward_iterative(t, y0, right_hand_side_pendulum, residu_pendulum, residu_jacobian_pendulum, **fargs)
