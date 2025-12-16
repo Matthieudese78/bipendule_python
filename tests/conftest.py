@@ -11,21 +11,18 @@ from double_pendulum.utils_pendulum import (
     right_hand_side_pendulum,
 )
 
+m1 = 1.0
+l1 = 1.0
+inertia = m1 * l1**2
+
 
 @pytest.fixture
 def pendulum_setup():
-    m1 = 1.0
-    l1 = 1.0
-    inertia = m1 * l1**2
-
-    yield {"mass": m1, "length": l1, "inertia tensor": inertia}
+    return {"mass": m1, "length": l1, "inertia tensor": inertia}
 
 
 @pytest.fixture
 def result_pendulum_euler_forward():
-    m1 = 1.0
-    l1 = 1.0
-    inertia = m1 * l1**2
     theta0 = -45.0 * np.pi / 180.0
     dthetadt0 = 0.0
     y0 = np.array([theta0, dthetadt0])
