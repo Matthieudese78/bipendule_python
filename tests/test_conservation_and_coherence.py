@@ -1,4 +1,5 @@
 import numpy as np
+from pytest import approx
 
 from double_pendulum.physics import GRAVITY
 
@@ -8,9 +9,10 @@ g = GRAVITY
 def test_conformity_euler_forward_backward(
     result_pendulum_euler_forward: np.ndarray, result_pendulum_euler_backward_iterative: np.ndarray
 ):
-    assert (
-        np.linalg.norm((result_pendulum_euler_backward_iterative[:, 0] - result_pendulum_euler_forward[:, -1])) < 1.0e-1
-    )
+    # assert position delta
+    assert result_pendulum_euler_backward_iterative[:, 0] == approx(result_pendulum_euler_forward[:, 0], rel=1.0e-2)
+    # assert velocity delta
+    assert result_pendulum_euler_backward_iterative[:, -1] == approx(result_pendulum_euler_forward[:, -1], rel=1.0e-2)
 
 
 def test_conservation_euler_forward(result_pendulum_euler_forward: np.ndarray, pendulum_setup: dict):
@@ -19,7 +21,7 @@ def test_conservation_euler_forward(result_pendulum_euler_forward: np.ndarray, p
     T = 0.5 * J * result_pendulum_euler_forward[:, 1] ** 2
     K = m1 * g * np.sin(result_pendulum_euler_forward[:, 0])
     H = T + K  # Hamiltonian
-    assert np.abs(H[0] - H[-1]) < 0.05 * np.abs(H[0])
+    assert H[-1] == approx(H[0], rel=1.0e-2)
 
 
 def test_conservation_euler_backward_iterative(
@@ -30,4 +32,4 @@ def test_conservation_euler_backward_iterative(
     T = 0.5 * J * result_pendulum_euler_backward_iterative[:, 1] ** 2
     K = m1 * g * np.sin(result_pendulum_euler_backward_iterative[:, 0])
     H = T + K  # Hamiltonian
-    assert np.abs(H[0] - H[-1]) < 0.05 * np.abs(H[0])
+    assert H[-1] == approx(H[0], rel=1.0e-2)
