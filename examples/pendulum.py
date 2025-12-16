@@ -126,19 +126,6 @@ result = euler_forward(t, y0, right_hand_side_pendulum, **fargs)
 
 post_treatment_pendulum(result, l1, m1, t)
 
-
-# %% test to put in tests/
-
-
-def test_expr_residu(y, h, ypred, **fargs):
-    analytic = np.array([ypred[0] - y[0] - h * ypred[1], ypred[1] - y[1] + (h * g / l1) * np.cos(ypred[0])])
-    res = ypred - y - h * right_hand_side_pendulum(ypred, **fargs)
-    assert np.array([analytic[i] == res[i] for i in range(2)]).all()
-
-
-ypred = y0 + h * right_hand_side_pendulum(y, **fargs)
-res = test_expr_residu(y0, h, ypred, **fargs)
-
 # %%
 result = euler_backward_iterative(t, y0, right_hand_side_pendulum, residu_pendulum, residu_jacobian_pendulum, **fargs)
 
