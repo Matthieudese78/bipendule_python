@@ -8,7 +8,13 @@ from scipy.integrate import odeint
 from double_pendulum.physics import GRAVITY
 from double_pendulum.postreatment import post_treatment_pendulum
 from double_pendulum.solvers import euler_backward_iterative, euler_forward
-from double_pendulum.utils_pendulum import residu_jacobian_pendulum, residu_pendulum, right_hand_side_pendulum
+from double_pendulum.utils_pendulum import (
+    residu_jacobian_pendulum,
+    residu_pendulum,
+    right_hand_side_odeint,
+    right_hand_side_pendulum,
+    right_hand_side_solve_ivp,
+)
 
 # %%
 
@@ -34,37 +40,6 @@ vy0 = dthetadt0 * l1 * np.cos(theta0)
 y0 = np.array([theta0, dthetadt0])
 
 
-# %% right hand side functions:
-# solve_ivp * rk45 :
-def right_hand_side_solve_ivp(t: np.ndarray, y: np.ndarray) -> np.ndarray:
-    """Right hand sides with right signature for scipy.integrate.solve_ivp.
-
-    Parameters:
-        t : time array
-        y : y array
-
-    Returns:
-        RHS
-    """
-    theta, dthetadt = y
-    gamma = -m1 * g * l1 * np.cos(theta) / J
-    return np.array([dthetadt, gamma])
-
-
-def right_hand_side_odeint(y: np.ndarray, t: np.ndarray) -> np.ndarray:
-    """Right hand sides with right signature for scipy.integrate.odeint.
-
-    Parameters:
-        t : time array
-        y : y array
-
-    Returns:
-        RHS
-    """
-    gamma = -m1 * l1 * g * np.cos(y[0]) / J
-    return np.array([y[1], gamma])
-
-
 # %%
 num_steps = 10000
 t = np.linspace(0.0, 10.0, num_steps)
@@ -72,19 +47,39 @@ t = np.linspace(0.0, 10.0, num_steps)
 y0 = np.array([theta0, dthetadt0])
 
 bool_odeint = False
-bool_solve_ivp = True
-bool_rk45 = False
+bool_solve_ivp = False
+bool_rk45 = True
 
 if bool_solve_ivp:
     y0 = (theta0, dthetadt0)
-    result = sp.integrate.solve_ivp(right_hand_side_solve_ivp, [0.0, 10.0], y0, t_eval=t)
+    result = sp.integrate.solve_ivp(
+        right_hand_side_solve_ivp,
+        [0.0, 10.0],
+        y0,
+        t_eval=t,
+        args=(fargs["mass"], fargs["length"], fargs["inertia tensor"]),
+    )
     sol = np.array([result.y[0], result.y[1]]).T
 
 if bool_odeint:
-    sol = odeint(right_hand_side_odeint, y0, t)
+    sol = odeint(right_hand_side_odeint, y0, t, args=(fargs["mass"], fargs["length"], fargs["inertia tensor"]))
 
 if bool_rk45:
-    rk = sp.integrate.RK45(right_hand_side_solve_ivp, 0.0, y0, 10.0, max_step=1.0e-3)
+
+    def wrapper_rhs_rk45(t, y):
+        return right_hand_side_solve_ivp(t, y, *(fargs["mass"], fargs["length"], fargs["inertia tensor"]))
+
+    rk = sp.integrate.RK45(
+        wrapper_rhs_rk45,
+        # right_hand_side_solve_ivp,
+        0.0,
+        y0,
+        10.0,
+        max_step=1.0e-3,
+        # **fargs,
+        # args=(fargs["mass"], fargs["length"], fargs["inertia tensor"]),
+        # vectorized=True,
+    )
 
     times = [rk.t]
     states = [rk.y.copy()]
