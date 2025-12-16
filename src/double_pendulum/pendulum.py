@@ -6,9 +6,10 @@ import numpy.linalg as la
 import scipy as sp
 from scipy.integrate import odeint
 
+from double_pendulum.physics import GRAVITY
 from double_pendulum.postreatment import post_treatment_pendulum
 from double_pendulum.solvers import euler_backward_newton, euler_forward
-from double_pendulum.physics import GRAVITY
+from double_pendulum.utils_pendulum import residu_jacobian_pendulum, residu_pendulum, right_hand_side_pendulum
 
 # %%
 
@@ -19,6 +20,8 @@ l1 = 1.0
 
 J = m1 * l1**2
 
+fargs = {"mass": m1, "length": l1, "inertia tensor": J}
+# initial conditions:
 theta0 = 0 * np.pi / 180.0
 
 x0 = l1 * np.cos(theta0)
@@ -113,14 +116,14 @@ h = t[1] - t[0]
 if choice == "euler_forward":
     y = y0.copy()
     for i, step in enumerate(t):
-        y += right_hand_side(y) * h
+        y += right_hand_side_pendulum(y, **fargs) * h
         result[i] = y
 
 post_treatment_pendulum(result, l1, m1, t)
 
 # %% test en fonction :
 
-result = euler_forward(t, y0, right_hand_side)
+result = euler_forward(t, y0, right_hand_side_pendulum, **fargs)
 
 post_treatment_pendulum(result, l1, m1, t)
 
@@ -128,17 +131,17 @@ post_treatment_pendulum(result, l1, m1, t)
 # %% test to put in tests/
 
 
-def test_expr_residu(y, ypred):
+def test_expr_residu(y, h, ypred, **fargs):
     analytic = np.array([ypred[0] - y[0] - h * ypred[1], ypred[1] - y[1] + (h * g / l1) * np.cos(ypred[0])])
-    res = ypred - y - h * right_hand_side(ypred)
+    res = ypred - y - h * right_hand_side_pendulum(ypred, **fargs)
     assert np.array([analytic[i] == res[i] for i in range(2)]).all()
 
 
-ypred = pred(y0)
-res = test_expr_residu(y0, ypred)
+ypred = y0 + h * right_hand_side_pendulum(y, **fargs)
+res = test_expr_residu(y0, h, ypred, **fargs)
 
 # %%
-result = euler_backward_newton(t, y0, right_hand_side, residu, residu_jacobian)
+result = euler_backward_newton(t, y0, right_hand_side_pendulum, residu_pendulum, residu_jacobian_pendulum, **fargs)
 # %%
 post_treatment_pendulum(
     result,
