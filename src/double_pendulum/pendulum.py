@@ -8,8 +8,8 @@ from scipy.integrate import odeint
 
 from double_pendulum.postreatment import post_treatment_pendulum
 from double_pendulum.solvers import euler_backward_newton, euler_forward
+from double_pendulum.physics import GRAVITY
 
-GRAVITY = 9.81
 # %%
 
 g = GRAVITY
@@ -34,19 +34,31 @@ y0 = np.array([theta0, dthetadt0])
 
 # %% right hand side functions:
 # solve_ivp * rk45 :
-def right_hand_side_solve_ivp(t, y) -> np.ndarray:
+def right_hand_side_solve_ivp(t: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Right hand sides with right signature for scipy.integrate.solve_ivp.
+
+    Parameters:
+        t : time array
+        y : y array
+
+    Returns:
+        RHS
+    """
     theta, dthetadt = y
     gamma = -m1 * g * l1 * np.cos(theta) / J
     return np.array([dthetadt, gamma])
 
 
-def right_hand_side_odeint(y, t) -> np.ndarray:
-    gamma = -m1 * l1 * g * np.cos(y[0]) / J
-    return np.array([y[1], gamma])
+def right_hand_side_odeint(y: np.ndarray, t: np.ndarray) -> np.ndarray:
+    """Right hand sides with right signature for scipy.integrate.odeint.
 
+    Parameters:
+        t : time array
+        y : y array
 
-# for custom euler forward and backward :
-def right_hand_side(y) -> np.ndarray:
+    Returns:
+        RHS
+    """
     gamma = -m1 * l1 * g * np.cos(y[0]) / J
     return np.array([y[1], gamma])
 
@@ -113,9 +125,7 @@ result = euler_forward(t, y0, right_hand_side)
 post_treatment_pendulum(result, l1, m1, t)
 
 
-# %%
-def residu(y, ypred):
-    return ypred - y - h * right_hand_side(ypred)
+# %% test to put in tests/
 
 
 def test_expr_residu(y, ypred):
@@ -126,16 +136,6 @@ def test_expr_residu(y, ypred):
 
 ypred = pred(y0)
 res = test_expr_residu(y0, ypred)
-
-
-def residu_jacobian(ypred):
-    return np.array(
-        [
-            [1.0, -h],
-            [-(h * g / l1) * np.sin(ypred[0]), 1.0],
-        ]
-    )
-
 
 # %%
 result = euler_backward_newton(t, y0, right_hand_side, residu, residu_jacobian)
