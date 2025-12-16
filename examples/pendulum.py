@@ -142,6 +142,7 @@ res = test_expr_residu(y0, h, ypred, **fargs)
 
 # %%
 result = euler_backward_newton(t, y0, right_hand_side_pendulum, residu_pendulum, residu_jacobian_pendulum, **fargs)
+
 # %%
 post_treatment_pendulum(
     result,
