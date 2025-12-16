@@ -2,7 +2,6 @@
 """Starting point for the double pendulum simulation."""
 
 import numpy as np
-import numpy.linalg as la
 import scipy as sp
 from scipy.integrate import odeint
 
