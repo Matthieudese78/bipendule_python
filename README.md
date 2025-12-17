@@ -1,2 +1,3 @@
-# template_python_project
-Template for python project initialization using uv init + git init
+# Observation
+- When trying to integrating with the direct version of euler backward, we observe a singularity at theta - pi/2.  
+
