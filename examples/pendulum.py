@@ -21,7 +21,7 @@ from double_pendulum.utils_pendulum import (
 
 g = GRAVITY
 
-m1 = 1.0e-2
+m1 = 1.0
 l1 = 1.0
 
 J = m1 * l1**2
@@ -41,7 +41,7 @@ vy0 = dthetadt0 * l1 * np.cos(theta0)
 y0 = np.array([theta0, dthetadt0])
 
 num_steps = 10000
-t = np.linspace(0.0, 1.0, num_steps)
+t = np.linspace(0.0, 10.0, num_steps)
 h = t[1] - t[0]
 
 # %%
@@ -55,7 +55,7 @@ if bool_solve_ivp:
     y0 = (theta0, dthetadt0)
     result = sp.integrate.solve_ivp(
         right_hand_side_solve_ivp,
-        [0.0, 10.0],
+        [0.0, t[-1]],
         y0,
         t_eval=t,
         args=(fargs["mass"], fargs["length"], fargs["inertia tensor"]),
@@ -78,7 +78,7 @@ if bool_rk45:
         0.0,
         y0,
         t[-1],
-        max_step=10.0 * h,
+        max_step=h,
     )
 
     times = [rk.t]
@@ -89,12 +89,12 @@ if bool_rk45:
         times.append(rk.t)
         states.append(rk.y.copy())
 
-    t = np.asarray(times)
+    time = np.asarray(times)
     sol = np.asarray(states)
 
 print(np.shape(sol))
 
-post_treatment_pendulum(sol, l1, m1, t)
+post_treatment_pendulum(sol, l1, m1, time)
 
 # %% PROTOTYPES :
 # Solver :

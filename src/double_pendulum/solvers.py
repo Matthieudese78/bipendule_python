@@ -2,7 +2,6 @@
 
 import numpy as np
 import numpy.linalg as la
-from double_pendulum.utils_pendulum import pendulum_inverse_rhs_inverse
 
 TOLERANCE_CONSTANT = 1.0e-6
 
