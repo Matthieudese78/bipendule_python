@@ -22,7 +22,8 @@ theta0 = -45.0 * np.pi / 180.0
 dthetadt0 = 0.0
 y0 = np.array([theta0, dthetadt0])
 num_steps = 10000
-t = np.linspace(0.0, 1.0, num_steps)
+t = np.linspace(0.0, 2.0, num_steps)
+h = t[1] - t[0]
 
 fargs = {"mass": m1, "length": l1, "inertia tensor": inertia}
 
@@ -46,7 +47,7 @@ def result_pendulum_euler_backward_iterative():
 def result_pendulum_solve_ivp():
     result = sp.integrate.solve_ivp(
         right_hand_side_solve_ivp,
-        [0.0, 10.0],
+        [t[0], t[-1]],
         y0,
         t_eval=t,
         args=(fargs["mass"], fargs["length"], fargs["inertia tensor"]),
@@ -61,19 +62,13 @@ def result_pendulum_odeint():
     )
 
 
-def wrapper_rhs_rk45(t, y):
+def wrapper_rhs_rk45(t: np.ndarray, y: np.ndarray):
     return right_hand_side_solve_ivp(t, y, *(fargs["mass"], fargs["length"], fargs["inertia tensor"]))
 
 
 @pytest.fixture
 def result_pendulum_rk45():
-    rk = sp.integrate.RK45(
-        wrapper_rhs_rk45,
-        0.0,
-        y0,
-        10.0,
-        max_step=1.0e-3,
-    )
+    rk = sp.integrate.RK45(wrapper_rhs_rk45, t[0], y0, t[-1], max_step=2.0 * h, t_eval=t)
 
     times = [rk.t]
     states = [rk.y.copy()]
