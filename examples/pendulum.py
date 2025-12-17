@@ -7,8 +7,9 @@ from scipy.integrate import odeint
 
 from double_pendulum.physics import GRAVITY
 from double_pendulum.postreatment import post_treatment_pendulum
-from double_pendulum.solvers import euler_backward_iterative, euler_forward
+from double_pendulum.solvers import euler_backward_direct, euler_backward_iterative, euler_forward
 from double_pendulum.utils_pendulum import (
+    pendulum_inverse_rhs_inverse,
     residu_jacobian_pendulum,
     residu_pendulum,
     right_hand_side_odeint,
@@ -39,18 +40,18 @@ vy0 = dthetadt0 * l1 * np.cos(theta0)
 
 y0 = np.array([theta0, dthetadt0])
 
+num_steps = 10000
+t = np.linspace(0.0, 1.0, num_steps)
+h = t[1] - t[0]
 
 # %%
-num_steps = 10000
-t = np.linspace(0.0, 10.0, num_steps)
-
-y0 = np.array([theta0, dthetadt0])
 
 bool_odeint = False
 bool_solve_ivp = False
 bool_rk45 = True
 
 if bool_solve_ivp:
+    print("SOLVE_IVP")
     y0 = (theta0, dthetadt0)
     result = sp.integrate.solve_ivp(
         right_hand_side_solve_ivp,
@@ -62,9 +63,11 @@ if bool_solve_ivp:
     sol = np.array([result.y[0], result.y[1]]).T
 
 if bool_odeint:
+    print("ODEINT")
     sol = odeint(right_hand_side_odeint, y0, t, args=(fargs["mass"], fargs["length"], fargs["inertia tensor"]))
 
 if bool_rk45:
+    print("RK45")
 
     def wrapper_rhs_rk45(t, y):
         return right_hand_side_solve_ivp(t, y, *(fargs["mass"], fargs["length"], fargs["inertia tensor"]))
@@ -74,11 +77,8 @@ if bool_rk45:
         # right_hand_side_solve_ivp,
         0.0,
         y0,
-        10.0,
-        max_step=1.0e-3,
-        # **fargs,
-        # args=(fargs["mass"], fargs["length"], fargs["inertia tensor"]),
-        # vectorized=True,
+        t[-1],
+        max_step=10.0 * h,
     )
 
     times = [rk.t]
@@ -93,12 +93,10 @@ if bool_rk45:
     sol = np.asarray(states)
 
 print(np.shape(sol))
-# %%
+
 post_treatment_pendulum(sol, l1, m1, t)
 
 # %% PROTOTYPES :
-t = np.linspace(0.0, 10.0, num_steps)
-y0 = np.array([theta0, dthetadt0])
 # Solver :
 choice = "euler_forward"
 # choice = "euler_backward"
@@ -114,7 +112,10 @@ if choice == "euler_forward":
         result[i] = y
 
 post_treatment_pendulum(result, l1, m1, t)
+# %% euler backward direct :
+result = euler_backward_direct(t, y0, right_hand_side_pendulum, pendulum_inverse_rhs_inverse, **fargs)
 
+post_treatment_pendulum(result, l1, m1, t)
 # %% test en fonction :
 
 result = euler_forward(t, y0, right_hand_side_pendulum, **fargs)

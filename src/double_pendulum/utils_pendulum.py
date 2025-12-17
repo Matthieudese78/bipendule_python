@@ -65,4 +65,22 @@ def right_hand_side_odeint(y: np.ndarray, t: np.ndarray, *args: tuple) -> np.nda
     return np.array([y[1], gamma])
 
 
+def pendulum_inverse_rhs_inverse(y: np.ndarray, **fargs: dict) -> np.ndarray:
+    """Computes the inverse of the right hand side function.
+
+    Parameters:
+        y : system sate
+        h : time step
+
+    Returns:
+        the inverse matrix
+    """
+    m1 = fargs["mass"]
+    l1 = fargs["length"]
+    inertia = fargs["inertia tensor"]
+    a = 1.0
+    b = -m1 * GRAVITY * l1 * np.cos(y[0]) / inertia
+    return np.array([[0, 1.0 / b], [1.0 / a, 0.0]])
+
+
 # %%
