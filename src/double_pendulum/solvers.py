@@ -81,11 +81,11 @@ def euler_backward_iterative(
 
 
 # Singularity at theta = pi/2 --> we keep it to illustrate
-def euler_backward_direct(
+def midpoint(
     t: np.ndarray,
     y0: float | np.ndarray,
     f: callable,
-    finv: callable,
+    # finv: callable,
     **fargs: dict,
 ) -> np.ndarray:
     """Integrates an ivp solution.
@@ -94,9 +94,7 @@ def euler_backward_direct(
         t : time array
         y0 : initial conditions
         f : right hand side
-        residu : computes the residu
-        residu_jacobian : computes the residu jacobian
-        fargs : arguments of the right hand side, residu & residu_jacobian callables.
+        fargs : arguments of the right hand side, finv callables.
 
     Returns:
         the result array (time, position, velocity)
@@ -107,6 +105,6 @@ def euler_backward_direct(
     for i, step in enumerate(t):
         # Euler Backward :
         ypred = y + h * f(y, **fargs)
-        y = np.dot(np.eye(y.shape[0]) - h * finv(ypred, **fargs), ypred)
+        y = np.linalg.solve(np.eye(y.shape[0]) - h * f((ypred + y), y**fargs), y)
         result[i] = y
     return result

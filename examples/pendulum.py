@@ -7,9 +7,8 @@ from scipy.integrate import odeint
 
 from double_pendulum.physics import GRAVITY
 from double_pendulum.postreatment import post_treatment_pendulum
-from double_pendulum.solvers import euler_backward_direct, euler_backward_iterative, euler_forward
+from double_pendulum.solvers import euler_backward_iterative, euler_forward
 from double_pendulum.utils_pendulum import (
-    pendulum_euler_backward_rhs_inverse,
     residu_jacobian_pendulum,
     residu_pendulum,
     right_hand_side_odeint,
@@ -112,10 +111,6 @@ if choice == "euler_forward":
         result[i] = y
 
 post_treatment_pendulum(result, l1, m1, t)
-# %% euler backward direct :
-result = euler_backward_direct(t, y0, right_hand_side_pendulum, pendulum_euler_backward_rhs_inverse, **fargs)
-
-post_treatment_pendulum(result, l1, m1, t)
 # %% test en fonction :
 
 result = euler_forward(t, y0, right_hand_side_pendulum, **fargs)
@@ -125,7 +120,16 @@ post_treatment_pendulum(result, l1, m1, t)
 # %%
 result = euler_backward_iterative(t, y0, right_hand_side_pendulum, residu_pendulum, residu_jacobian_pendulum, **fargs)
 
+post_treatment_pendulum(
+    result,
+    l1,
+    m1,
+    t,
+)
 # %%
+result = midpoint(t, y0, right_hand_side_pendulum, **fargs)
+
+
 post_treatment_pendulum(
     result,
     l1,
