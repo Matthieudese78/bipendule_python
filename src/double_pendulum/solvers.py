@@ -81,6 +81,7 @@ def euler_backward_iterative(
     return result
 
 
+# Singularity at theta = pi/2 --> we keep it to illustrate
 def euler_backward_direct(
     t: np.ndarray,
     y0: float | np.ndarray,
