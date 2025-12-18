@@ -65,7 +65,7 @@ def right_hand_side_odeint(y: np.ndarray, t: np.ndarray, *args: tuple) -> np.nda
     return np.array([y[1], gamma])
 
 
-def pendulum_inverse_rhs_inverse(y: np.ndarray, **fargs: dict) -> np.ndarray:
+def pendulum_euler_backward_rhs_inverse(y: np.ndarray, **fargs: dict) -> np.ndarray:
     """Computes the inverse of the right hand side function.
 
     Parameters:
