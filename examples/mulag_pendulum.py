@@ -38,7 +38,9 @@ h = t[1] - t[0]
 # p 128 Shabana (3rd edition 2005):
 
 # %%
-y0 = np.array([x0, y0, vx0, vy0, theta0, dthetadt0, 0.0, 0.0])
+# pour demain : probleme de shape
+# dans utils pendulum, certaines foncitons magent du 6, d'autres du 8 --> à voir.
+y0 = np.array([x0, y0, vx0, vy0, theta0, dthetadt0])
 result = euler_forward(t, y0, mulag_rhs, **fargs)
 # %%
 post_treatment_pendulum(
