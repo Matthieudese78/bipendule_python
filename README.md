@@ -31,6 +31,11 @@ $$tol = c h^3 \| f(t,y_n)\| $$
 #### Euler :
 $$tol = c h^2 \| f(t,y_n)\| $$
 
+
+# Lagrange multipliers : 
+Source: p.128 Shabana (3rd edition 2005): use of redundant coordinates :
+
+
 # note 
 the notion of torsor comes form the fact that we try to apply a force vector to a position vector in the form :   
 
@@ -62,7 +67,7 @@ the rotation is equivalent to 2 consecutive reflections about two non // lines.
 the translation is equivalent to 2 consecutive reflections about two // lines.
 
 the wedge product is called the fundamental form. 
-$$ \begin{pmatrix} i \ j \ k \\ q_1 \ q_2 \ q_3 \\ p_1 \ p_2 \ p_3\end{pmatrix}$$
+$$ \begin{pmatrix} i & j & k \\ q_1 & q_2 & q_3 \\ p_1 & p_2 & p_3\end{pmatrix}$$
 
 with 
 $$i^2 = j^2 = k^2 = ijk = -1$$
@@ -71,6 +76,18 @@ which impli
 # why i? 
 $$z \in SO(2) , z = \cos(\theta) + i \sin(\theta) $$ 
 $$ $$
+
+# Lagrange multipliers : redundant degrees of freedom 
+Sources : 
+- Shabana "Dynamics of multibody systems", third edition 2005 p 128
+- Shabana "Computational Dynamics", 2010 p 192
+
+Once introducing kinematic constraints, the 1st order system of ODEs becomes a DAE :
+$$\begin{aligned} J\ddot{\theta} = \Gamma \\ \Phi(q) =0  \end{aligned}$$
+- Coordinates : $x, y, \theta, \dot{x}, \dot{y}, \dot{\theta}$
+- Independent coordinates : $\theta, \dot{\theta}$
+- Dependent coordinates : $x, y, \dot{x},\dot{x}$
+
 
 
 

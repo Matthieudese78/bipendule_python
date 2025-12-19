@@ -77,3 +77,40 @@ def right_hand_side_odeint(y: np.ndarray, t: np.ndarray, *args: tuple) -> np.nda
     m1, l1, inertia = args
     gamma = -m1 * l1 * GRAVITY * np.cos(y[0]) / inertia
     return np.array([y[1], gamma])
+
+
+def cq_pendulum(y: np.ndarray, **fargs: dict) -> np.ndarray:
+    l1 = fargs["length"]
+    theta = y[4]  # y = (x,y,dot(x),dot(y),theta,dot(theta))
+    np.array([[1.0, 0.0, 0.0, 0.0, l1 * np.sin(theta), 0.0][0.0, 1.0, 0.0, 0.0, -l1 * np.cos(theta), 0.0]])
+
+
+def augmented_lhs(y: np.ndarray, **fargs: dict) -> np.ndarray:
+    """Creates a left hand side matrix for the 1st order constrained DAE.
+
+    Parameters :
+        y : state space coordinates
+        fargs : miscellaneous data
+        n : number of coordinates
+        nc : number of kinematic constraints
+    Returns :
+        (n+nc) x (n+nc) augmented left hand side.
+    """
+    n = y.shape[0]
+    cq = cq_pendulum(y, **fargs)
+    nc = cq.shape[0]
+    return np.block([[np.eye(n), cq.T], [cq, np.zeros((nc, nc))]])
+
+
+def augmented_rhs(y: np.ndarray, nc: int, **fargs: dict) -> np.ndarray:
+    m1 = fargs["mass"]
+    l1 = fargs["length"]
+    # reminder  y = (x,y,dot(x),dot(y),theta,dot(theta), lambda_x, lambda_y)
+    f = np.array([y[2], y[3], 0.0, -m1 * GRAVITY, y[5], -(GRAVITY / l1) * np.cos(y[4])])
+    # for now, the appended joints forces are null.
+    # which means holonomic constraints (independent of velocity) + no motor.
+    return np.concatenate(f, np.zeros(nc))
+
+
+def mulag_rhs(y: np.ndarray, nc: np.ndarray, **fargs: dict) -> np.ndarray:
+    return np.linalg.solve(augmented_lhs(y, **fargs), augmented_rhs(y, nc, **fargs))
