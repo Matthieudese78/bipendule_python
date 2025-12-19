@@ -7,10 +7,12 @@ from scipy.integrate import odeint
 
 from double_pendulum.physics import GRAVITY
 from double_pendulum.postreatment import post_treatment_pendulum
-from double_pendulum.solvers import euler_backward_iterative, euler_forward
+from double_pendulum.solvers import euler_backward_iterative, euler_forward, midpoint_implicit
 from double_pendulum.utils_pendulum import (
-    residu_jacobian_pendulum,
-    residu_pendulum,
+    residu_euler,
+    residu_jacobian_euler,
+    residu_jacobian_midpoint,
+    residu_midpoint,
     right_hand_side_odeint,
     right_hand_side_pendulum,
     right_hand_side_solve_ivp,
@@ -118,7 +120,7 @@ result = euler_forward(t, y0, right_hand_side_pendulum, **fargs)
 post_treatment_pendulum(result, l1, m1, t)
 
 # %%
-result = euler_backward_iterative(t, y0, right_hand_side_pendulum, residu_pendulum, residu_jacobian_pendulum, **fargs)
+result = euler_backward_iterative(t, y0, right_hand_side_pendulum, residu_euler, residu_jacobian_euler, **fargs)
 
 post_treatment_pendulum(
     result,
@@ -127,7 +129,7 @@ post_treatment_pendulum(
     t,
 )
 # %%
-result = midpoint(t, y0, right_hand_side_pendulum, **fargs)
+result = midpoint_implicit(t, y0, right_hand_side_pendulum, residu_midpoint, residu_jacobian_midpoint, **fargs)
 
 
 post_treatment_pendulum(

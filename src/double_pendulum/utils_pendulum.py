@@ -14,16 +14,30 @@ def right_hand_side_pendulum(y, **fargs) -> np.ndarray:
     return np.array([y[1], gamma])
 
 
-def residu_pendulum(y, ypred, h, **fargs):
+def residu_euler(y, ypred, h, **fargs):
     return ypred - y - h * right_hand_side_pendulum(ypred, **fargs)
 
 
-def residu_jacobian_pendulum(ypred, h, **fargs):
+def residu_midpoint(y, ypred, h, **fargs):
+    return ypred - y - h * right_hand_side_pendulum((y + ypred) / 2.0, **fargs)
+
+
+def residu_jacobian_euler(ypred, h, **fargs):
     l1 = fargs["length"]
     return np.array(
         [
             [1.0, -h],
             [-(h * GRAVITY / l1) * np.sin(ypred[0]), 1.0],
+        ]
+    )
+
+
+def residu_jacobian_midpoint(y: np.ndarray, ypred: np.ndarray, h: float, **fargs: dict) -> np.ndarray:
+    l1 = fargs["length"]
+    return np.eye(y.shape[0]) - h * 0.5 * np.array(
+        [
+            [0, 1.0],
+            [(GRAVITY / l1) * np.sin((y[0] + ypred[0]) / 2.0), 0.0],
         ]
     )
 
