@@ -62,7 +62,8 @@ def euler_backward_iterative(
         crit = la.norm(res)
         niter = 0
         print(f"crit initial = {crit}")
-        tol = TOLERANCE_CONSTANT * h * la.norm(f(ypred, **fargs))
+        # See README for tol definition :
+        tol = TOLERANCE_CONSTANT * h**2 * la.norm(f(y, **fargs))
         while (crit > tol) and (niter < max_iter):
             jac = residu_jacobian(ypred, h, **fargs)
             delta_res = -np.linalg.solve(jac, res)
