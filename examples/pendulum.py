@@ -9,6 +9,7 @@ from double_pendulum.physics import GRAVITY
 from double_pendulum.postreatment import post_treatment_pendulum
 from double_pendulum.solvers import euler_backward_iterative, euler_forward, midpoint_implicit
 from double_pendulum.utils_pendulum import (
+    mulag_rhs,
     residu_euler,
     residu_jacobian_euler,
     residu_jacobian_midpoint,
