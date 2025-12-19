@@ -7,8 +7,8 @@ from double_pendulum.solvers import (
     euler_forward,
 )
 from double_pendulum.utils_pendulum import (
-    residu_jacobian_pendulum,
-    residu_pendulum,
+    residu_euler,
+    residu_jacobian_euler,
     right_hand_side_odeint,
     right_hand_side_pendulum,
     right_hand_side_solve_ivp,
@@ -40,7 +40,7 @@ def result_pendulum_euler_forward():
 
 @pytest.fixture
 def result_pendulum_euler_backward_iterative():
-    yield euler_backward_iterative(t, y0, right_hand_side_pendulum, residu_pendulum, residu_jacobian_pendulum, **fargs)
+    yield euler_backward_iterative(t, y0, right_hand_side_pendulum, residu_euler, residu_jacobian_euler, **fargs)
 
 
 @pytest.fixture
